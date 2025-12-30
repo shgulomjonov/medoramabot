@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  medorama-bot:
+    build: .
+    container_name: medorama_bot
+    restart: always
+    env_file:
+      - .env
+    environment:
+      - TZ=Asia/Tashkent
+    mem_limit: 512m
+    # BU QISM MUHIM: Ma'lumotlarni tashqariga chiqarib saqlash
+    volumes:
+      - ./data:/app/data
