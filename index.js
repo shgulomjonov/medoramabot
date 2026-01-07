@@ -5,7 +5,7 @@ const axios = require('axios');
 const mongoose = require('mongoose');
 const express = require('express');
 
-// --- Server ---
+// --- Server (Render uchun) ---
 const app = express();
 const PORT = process.env.PORT || 3000;
 app.get('/', (req, res) => res.send('Bot is active'));
@@ -16,7 +16,7 @@ const BOT_TOKEN = process.env.BOT_TOKEN;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
 const MONGO_URI = process.env.MONGO_URI;
-const ADMIN_ID = process.env.ADMIN_ID; // YANGI
+const ADMIN_ID = process.env.ADMIN_ID;
 
 if (!BOT_TOKEN || !GEMINI_API_KEY || !TMDB_API_KEY) {
     console.error('Xatolik: Kalitlar yetishmayapti!');
@@ -28,7 +28,7 @@ if (MONGO_URI) {
     mongoose.connect(MONGO_URI).then(() => console.log('✅ MongoDB ulandi')).catch(e => console.log(e));
 }
 
-// 1. FOYDALANUVCHI MODELI
+// User Model
 const userSchema = new mongoose.Schema({
     id: { type: Number, unique: true },
     name: String,
@@ -43,16 +43,13 @@ const userSchema = new mongoose.Schema({
 });
 const User = mongoose.model('User', userSchema);
 
-// 2. KINO BAZASI MODELI (YANGI)
-// Biz yuklagan kinolarning ID lari shu yerda turadi
+// Movie Model (Admin yuklagan videolar)
 const movieSchema = new mongoose.Schema({
-    file_id: String,      // Telegramdagi video kodi
-    title: String,        // Kino nomi (kichik harfda)
-    caption: String,      // Kino haqida (caption)
+    file_id: String,
+    title: String,
+    caption: String,
     addedBy: Number
 });
-// Matnli qidiruv uchun indeks
-movieSchema.index({ title: 'text' }); 
 const Movie = mongoose.model('Movie', movieSchema);
 
 const bot = new Telegraf(BOT_TOKEN);
@@ -91,11 +88,57 @@ const TEXTS = {
         watch_en: "🇺🇸 English (Direct)",
         results: "🔎 Natijalar:",
         found_in_db: "📼 <b>Bot bazasidan topildi!</b>\nMarhamat, tomosha qiling:",
-        admin_upload: "Admin, kino yuklash uchun videoni shu yerga tashlang va 'caption'ga nomini yozing."
+        genre_names: { 28: "Jangari", 35: "Komediya", 27: "Qo'rqinchli", 18: "Drama", 14: "Fantastika", 10749: "Romantika", 16: "Multfilm", 878: "Ilmiy-fantastika" },
+        genre_selected: "✅ <b>{genre}</b> janri tanlandi.\nEndi shu janrdagi kino nomini yozing."
     },
-    // Boshqa tillar qisqartirildi...
-    ru: { /* ... */ },
-    en: { /* ... */ }
+    ru: {
+        welcome_menu: "🏠 Главное меню:",
+        preview: "🤖 <b>Бот Medorama!</b>\n\nВведите название фильма:",
+        register_limit: "⛔️ <b>Лимит исчерпан!</b> Отправьте номер.",
+        btn_phone: "📱 Отправить номер",
+        menu_search: "🎬 Поиск Кино", 
+        menu_genres: "🎭 Жанры",
+        menu_cab: "👤 Кабинет", 
+        menu_prem: "💎 Премиум",
+        search_prompt: "🔎 <b>Введите название фильма:</b>",
+        not_found: "😔 Ничего не найдено.",
+        daily_limit: "⛔️ <b>Пробный период истёк!</b>",
+        cabinet_title: "👤 <b>Ваш Кабинет:</b>",
+        trial_active: "✅ Регистрация успешна!\n🎁 <b>1 месяц Премиум.</b>",
+        genres_title: "🎭 <b>Выберите жанр:</b>",
+        watch_ru: "🇷🇺 Смотреть (Direct)",
+        watch_ru_yandex: "🇷🇺 Поиск (Yandex)",
+        watch_uz: "🇺🇿 Смотреть (Asilmedia)",
+        watch_en: "🇺🇸 English (Direct)",
+        results: "🔎 Результаты:",
+        found_in_db: "📼 <b>Найдено в базе!</b>\nПриятного просмотра:",
+        genre_names: { 28: "Боевик", 35: "Комедия", 27: "Ужасы", 18: "Драма", 14: "Фэнтези", 10749: "Романтика", 16: "Мультфильм", 878: "Фантастика" },
+        genre_selected: "✅ Выбран жанр: <b>{genre}</b>.\nВведите название фильма."
+    },
+    en: {
+        welcome_menu: "🏠 Main Menu:",
+        preview: "🤖 <b>Medorama Bot!</b>\n\nEnter movie name:",
+        register_limit: "⛔️ <b>Limit reached!</b> Send phone number.",
+        btn_phone: "📱 Send Number",
+        menu_search: "🎬 Search Movie", 
+        menu_genres: "🎭 Genres",
+        menu_cab: "👤 Profile", 
+        menu_prem: "💎 Premium",
+        search_prompt: "🔎 <b>Enter movie name:</b>",
+        not_found: "😔 Nothing found.",
+        daily_limit: "⛔️ <b>Trial ended!</b>",
+        cabinet_title: "👤 <b>Your Profile:</b>",
+        trial_active: "✅ Registration successful!\n🎁 <b>1 month Free Premium.</b>",
+        genres_title: "🎭 <b>Choose Genre:</b>",
+        watch_ru: "🇷🇺 Watch (Direct)",
+        watch_ru_yandex: "🇷🇺 Search (Yandex)",
+        watch_uz: "🇺🇿 Watch (Asilmedia)",
+        watch_en: "🇺🇸 English (Direct)",
+        results: "🔎 Results:",
+        found_in_db: "📼 <b>Found in Database!</b>\nEnjoy watching:",
+        genre_names: { 28: "Action", 35: "Comedy", 27: "Horror", 18: "Drama", 14: "Fantasy", 10749: "Romance", 16: "Animation", 878: "Sci-Fi" },
+        genre_selected: "✅ Genre: <b>{genre}</b>.\nType movie name."
+    }
 };
 
 // --- Yordamchi Funksiyalar ---
@@ -131,12 +174,43 @@ function checkAccess(user) {
     return { allowed: false, reason: 'register' };
 }
 
-// --- LOGIKA ---
+// --- API ---
+async function searchMoviesList(query) {
+    try {
+        const response = await axios.get(`https://api.themoviedb.org/3/search/movie`, {
+            params: { api_key: TMDB_API_KEY, query: query, language: 'ru-RU' }
+        });
+        return response.data.results.slice(0, 5);
+    } catch (e) { return []; }
+}
+
+async function getMovieDetails(id) {
+    try {
+        const response = await axios.get(`https://api.themoviedb.org/3/movie/${id}`, {
+            params: { api_key: TMDB_API_KEY, language: 'ru-RU' }
+        });
+        return response.data;
+    } catch (e) { return null; }
+}
+
+async function analyzeIntent(userInput) {
+    try {
+        const prompt = `Task: Extract movie title from "${userInput}". Output JSON: { "isMovieRequest": boolean, "searchQuery": "Title" }`;
+        const result = await model.generateContent(prompt);
+        let text = result.response.text().replace(/```json/g, '').replace(/```/g, '').trim();
+        return JSON.parse(text);
+    } catch (e) {
+        return { isMovieRequest: true, searchQuery: userInput };
+    }
+}
+
+// --- BOT LOGIKASI ---
 
 bot.start(async (ctx) => {
     const userId = ctx.from.id;
     await getUser(userId, ctx.from.first_name);
     
+    // Referal
     const referrerId = ctx.startPayload;
     if (referrerId && referrerId != userId) {
         const referrer = await User.findOne({ id: Number(referrerId) });
@@ -153,30 +227,24 @@ bot.start(async (ctx) => {
     );
 });
 
-// ADMIN: Video yuklash logikasi
+// ADMIN: Video yuklash
 bot.on('video', async (ctx) => {
-    // Faqat admin yuklay oladi
     if (String(ctx.from.id) !== String(ADMIN_ID)) return;
-
     const fileId = ctx.message.video.file_id;
-    const caption = ctx.message.caption; // Kino nomi captionda bo'lishi shart
+    const caption = ctx.message.caption; 
 
-    if (!caption) {
-        return ctx.reply("❌ Kino nomini 'Caption' (opisaniya) ga yozib yuboring!");
-    }
+    if (!caption) return ctx.reply("❌ Kino nomini captionga yozing!");
 
-    // Bazaga saqlaymiz
     await Movie.create({
         file_id: fileId,
-        title: caption.toLowerCase().trim(), // Qidirish oson bo'lishi uchun kichik harf
+        title: caption.toLowerCase().trim(),
         caption: caption,
         addedBy: ctx.from.id
     });
-
-    ctx.reply(`✅ <b>"${caption}"</b> bazaga qo'shildi! Endi foydalanuvchilar uni nomi orqali topa olishadi.`, {parse_mode: 'HTML'});
+    ctx.reply(`✅ <b>"${caption}"</b> bazaga qo'shildi!`, {parse_mode: 'HTML'});
 });
 
-// Til tanlash
+// Til va Menyu
 bot.hears(['🇺🇿 O\'zbek', '🇷🇺 Русский', '🇺🇸 English'], async (ctx) => {
     const user = await getUser(ctx.from.id);
     
@@ -185,7 +253,7 @@ bot.hears(['🇺🇿 O\'zbek', '🇷🇺 Русский', '🇺🇸 English'], a
     else user.lang = 'en';
     await user.save();
 
-    const t = TEXTS[user.lang] || TEXTS.uz; 
+    const t = TEXTS[user.lang]; 
     await ctx.replyWithHTML(t.preview);
     await ctx.reply(t.welcome_menu, Markup.keyboard([
         [t.menu_search, t.menu_genres],
@@ -193,7 +261,6 @@ bot.hears(['🇺🇿 O\'zbek', '🇷🇺 Русский', '🇺🇸 English'], a
     ]).resize());
 });
 
-// Kontakt
 bot.on('contact', async (ctx) => {
     const user = await getUser(ctx.from.id);
     user.phone = ctx.message.contact.phone_number;
@@ -209,17 +276,99 @@ bot.on('contact', async (ctx) => {
     ]).resize());
 });
 
-// --- ASOSIY QIDIRUV (GIBRID) ---
+// Janr tanlash
+bot.action(/genre_(\d+)/, async (ctx) => {
+    const genreId = ctx.match[1];
+    const user = await getUser(ctx.from.id);
+    const t = TEXTS[user.lang] || TEXTS.uz;
+    
+    await ctx.answerCbQuery();
+    const genreName = t.genre_names[genreId];
+    const msg = t.genre_selected.replace('{genre}', genreName);
+    ctx.replyWithHTML(msg);
+});
+
+// --- MUHIM QISM: FILM TANLASH (TUZAILDI) ---
+bot.action(/select_(\d+)/, async (ctx) => {
+    try {
+        const tmdbId = ctx.match[1];
+        await ctx.answerCbQuery(); // Loadingni to'xtatish
+        
+        const user = await getUser(ctx.from.id);
+        const t = TEXTS[user.lang || 'uz'];
+
+        const movie = await getMovieDetails(tmdbId);
+        if (!movie) return ctx.reply("Error loading movie.");
+
+        const { title, overview, release_date, poster_path, vote_average } = movie;
+        const year = release_date ? release_date.split('-')[0] : '';
+        const posterUrl = poster_path ? `https://image.tmdb.org/t/p/w500${poster_path}` : null;
+
+        // Manbalar
+        const linkRu = `https://embed.su/embed/movie/${tmdbId}`;
+        const linkRuYandex = `https://yandex.uz/video/search?text=${encodeURIComponent(title + " смотреть онлайн")}`;
+        const linkEn = `https://vidsrc.net/embed/movie/${tmdbId}`;
+        const linkUz = `http://asilmedia.org/index.php?do=search&subaction=search&story=${encodeURIComponent(title)}`;
+
+        // Tugmalar
+        const buttons = [
+            [Markup.button.webApp(t.watch_ru, linkRu)],
+            [Markup.button.webApp(t.watch_ru_yandex, linkRuYandex)],
+            [Markup.button.webApp(t.watch_en, linkEn)],
+            [Markup.button.url(t.watch_uz, linkUz)]
+        ];
+
+        const safeTitle = escapeHTML(title);
+        const safeOverview = escapeHTML(overview ? overview.slice(0, 300) + '...' : '');
+        const caption = `🎬 <b>${safeTitle}</b> (${year})\n⭐️ ${vote_average.toFixed(1)}\n\n📝 ${safeOverview}`;
+
+        if (posterUrl) {
+            await ctx.replyWithPhoto(posterUrl, { 
+                caption: caption, 
+                parse_mode: 'HTML', 
+                ...Markup.inlineKeyboard(buttons) 
+            });
+        } else {
+            await ctx.replyWithHTML(caption, Markup.inlineKeyboard(buttons));
+        }
+
+    } catch (e) {
+        console.error("Movie select error:", e);
+        ctx.reply("Xatolik yuz berdi.");
+    }
+});
+
+// Asosiy Handler
 bot.on('text', async (ctx) => {
     const userInput = ctx.message.text;
     const user = await getUser(ctx.from.id);
     const t = TEXTS[user.lang] || TEXTS.uz;
 
-    // Menyu tugmalari
+    // Menyu
     if (userInput === t.menu_search) return ctx.replyWithHTML(t.search_prompt);
-    // ... (boshqa menyular qisqartirildi) ...
+    if (userInput === t.menu_prem) return ctx.replyWithHTML("💎 <b>Premium:</b> 5,000 so'm yoki 5 ta do'st.");
+    if (userInput === t.menu_cab) {
+        const refLink = `https://t.me/${ctx.botInfo.username}?start=${user.id}`;
+        let msg = `${t.cabinet_title}\n\n` +
+                  `🆔 ID: <code>${user.id}</code>\n` +
+                  `💎 Premium: <b>${user.isPremium || user.isTrial ? '✅ Aktiv' : '❌ Yo\'q'}</b>\n` +
+                  `💰 Ballar: <b>${user.points}</b>\n` +
+                  `👥 Do'stlar: <b>${user.referrals}</b>\n\n` +
+                  `🔗 Link:\n<code>${refLink}</code>`;
+        return ctx.replyWithHTML(msg);
+    }
+    if (userInput === t.menu_genres) {
+        const names = t.genre_names;
+        const buttons = [
+            [Markup.button.callback('💥 ' + names[28], 'genre_28'), Markup.button.callback('😂 ' + names[35], 'genre_35')],
+            [Markup.button.callback('🧟‍♂️ ' + names[27], 'genre_27'), Markup.button.callback('🎭 ' + names[18], 'genre_18')],
+            [Markup.button.callback('🧙‍♂️ ' + names[14], 'genre_14'), Markup.button.callback('💘 ' + names[10749], 'genre_10749')],
+            [Markup.button.callback('🧸 ' + names[16], 'genre_16'), Markup.button.callback('🚀 ' + names[878], 'genre_878')]
+        ];
+        return ctx.replyWithHTML(t.genres_title, Markup.inlineKeyboard(buttons));
+    }
 
-    // Ruxsat tekshiruvi
+    // Limit va Ruxsat
     const access = checkAccess(user);
     if (!access.allowed) {
         if (access.reason === 'register') {
@@ -231,41 +380,30 @@ bot.on('text', async (ctx) => {
     }
 
     try {
-        // 1-QADAM: Bizning BAZADAN qidirish (O'zbek kinolari uchun)
-        // Kino nomiga o'xshash narsalarni qidiramiz (Regex)
+        // 1. Bazadan qidirish
         const localMovies = await Movie.find({ 
             title: { $regex: userInput.toLowerCase(), $options: 'i' } 
         });
 
-        // Agar bazada bo'lsa -> Videoni yuboramiz
         if (localMovies.length > 0) {
             await ctx.replyWithHTML(t.found_in_db);
             for (let movie of localMovies) {
-                // Videoni forward qilmasdan, yangi xabar sifatida yuboramiz
                 await ctx.replyWithVideo(movie.file_id, {
                     caption: `🎬 <b>${movie.caption}</b>\n\n@medoramabot`,
                     parse_mode: 'HTML'
                 });
             }
-            // Limitni yangilaymiz
-            if (access.updateCount) {
-                user.searchCount += 1;
-                await user.save();
-            }
-            return; // TMDB dan qidirish shart emas
+            if (access.updateCount) { user.searchCount += 1; await user.save(); }
+            return; 
         }
 
-        // 2-QADAM: Agar bazada yo'q bo'lsa -> GLOBAL QIDIRUV (TMDB)
+        // 2. Global qidiruv
+        if (access.updateCount) { user.searchCount += 1; await user.save(); }
+
         const ai = await analyzeIntent(userInput);
         const movies = await searchMoviesList(ai.searchQuery || userInput);
 
         if (!movies || movies.length === 0) return ctx.reply(t.not_found);
-
-        // Limitni yangilaymiz
-        if (access.updateCount) {
-            user.searchCount += 1;
-            await user.save();
-        }
 
         const buttons = movies.map(movie => {
             const year = movie.release_date ? movie.release_date.split('-')[0] : '';
@@ -277,35 +415,5 @@ bot.on('text', async (ctx) => {
     } catch (err) { console.log(err); }
 });
 
-// TMDB tanlash
-bot.action(/select_(\d+)/, async (ctx) => {
-    // ... (Eski TMDB logikasi o'zgarishsiz qoladi) ...
-    // Bu yerda o'sha WebApp/Asilmedia linklari turadi.
-});
-
-// --- API Funksiyalari (qolganlari) ---
-// (searchMoviesList, getMovieDetails, analyzeIntent funksiyalari oldingi kodda bor edi,
-//  ularni bu yerga o'z holicha ko'chirib o'tish kerak)
-
-async function searchMoviesList(query) {
-    try {
-        const response = await axios.get(`https://api.themoviedb.org/3/search/movie`, {
-            params: { api_key: TMDB_API_KEY, query: query, language: 'ru-RU' }
-        });
-        return response.data.results.slice(0, 5);
-    } catch (e) { return []; }
-}
-
-async function analyzeIntent(userInput) {
-    try {
-        const prompt = `Task: Extract movie title from "${userInput}". Output JSON: { "isMovieRequest": boolean, "searchQuery": "Title" }`;
-        const result = await model.generateContent(prompt);
-        let text = result.response.text().replace(/```json/g, '').replace(/```/g, '').trim();
-        return JSON.parse(text);
-    } catch (e) {
-        return { isMovieRequest: true, searchQuery: userInput };
-    }
-}
-
-bot.launch().then(() => console.log('✅ Medorama (Hybrid Mode) ishga tushdi!'));
+bot.launch().then(() => console.log('✅ Medorama (Full Fixed) ishga tushdi!'));
 process.once('SIGINT', () => bot.stop('SIGINT'));
