@@ -417,3 +417,4 @@ bot.on('text', async (ctx) => {
 
 bot.launch().then(() => console.log('✅ Medorama (Full Fixed) ishga tushdi!'));
 process.once('SIGINT', () => bot.stop('SIGINT'));
+// update v1.3 - majburiy yangilash
